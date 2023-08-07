@@ -15,6 +15,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
 
         setContentView(R.layout.activity_main);
         homeRL = findViewById(R.id.idRLHome);
@@ -80,23 +81,31 @@ public class MainActivity extends AppCompatActivity {
         weatherRV.setAdapter(weatherRVAdapter);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED)  {
-                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
-            }
-        Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        cityName =getCityName(location.getLongitude(), location.getLatitude());
-        getWeatherInfo(cityName);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
+        }
 
-        searchIV.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String city = Objects.requireNonNull(cityEdt.getText()).toString();
-                if (city.isEmpty()){
-                    Toast.makeText(MainActivity.this,"Please enter City", Toast.LENGTH_SHORT).show();
-                }else {
-                    cityNameTV.setText(cityName);
-                    getWeatherInfo(city);
-                }
+        if (locationManager != null) {
+            Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+//            if (location != null) {
+//                cityName = getCityName(location.getLongitude(), location.getLatitude());
+//            }
+            if (location != null) {
+                String cityLocation= String.valueOf(location.getLatitude()+","+location.getLongitude());
+                getWeatherInfo(cityLocation);
+            }
+        }
+
+
+
+
+        searchIV.setOnClickListener(v -> {
+            String city = Objects.requireNonNull(cityEdt.getText()).toString();
+            if (city.isEmpty()) {
+                Toast.makeText(MainActivity.this, "Please enter City", Toast.LENGTH_SHORT).show();
+            } else {
+                cityNameTV.setText(cityName);
+                getWeatherInfo(city);
             }
         });
     }
@@ -104,17 +113,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode==PERMISSION_CODE){
-            if (grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(this,"Permission Granted..",Toast.LENGTH_SHORT).show();
-            }else{
-                Toast.makeText(this,"Please Provide the Permission",Toast.LENGTH_SHORT).show();
+        if (requestCode == PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission Granted..", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Please Provide the Permission", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
     }
 
-    private  String getCityName(double longitude, double latitude){
+    private String getCityName(double longitude, double latitude) {
         String cityName = "Not Found";
         Geocoder gcd = new Geocoder(getBaseContext(), Locale.getDefault());
         try {
@@ -124,22 +133,24 @@ public class MainActivity extends AppCompatActivity {
                 if (adr != null) {
                     String city = adr.getLocality();
                     if (city != null && !city.equals("")) {
-                        cityName =city;
-                    }else{
-                        Log.d("TAG","CITY NOT FOUND");
-                        Toast.makeText(this,"User city Not Found...",Toast.LENGTH_SHORT).show();
+                        cityName = city;
+                        break;
+                    } else {
+                        Log.d("TAG", "CITY NOT FOUND");
+                        Toast.makeText(this, "User city Not Found...", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
+            return "";
         }
         return cityName;
     }
 
 
-    private void getWeatherInfo(String cityname){
-        String url ="http://api.weatherapi.com/v1/forecast.json?key=963a6310d27c4e95987190602232607&q="+cityname+"&days=5&aqi=yws&alerts=yes";
+    private void getWeatherInfo(String cityname) {
+        String url = "http://api.weatherapi.com/v1/forecast.json?key=963a6310d27c4e95987190602232607&q=" + cityname + "&days=5&aqi=yws&alerts=yes";
         cityNameTV.setText(cityname);
         RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
 
@@ -152,16 +163,16 @@ public class MainActivity extends AppCompatActivity {
 
                 try {
                     String temperature = response.getJSONObject("current").getString("temp_c");
-                    temperatureTV.setText(temperature+"°c");
+                    temperatureTV.setText(temperature + "°c");
                     int isDay = response.getJSONObject("current").getInt("is_day");
                     String condition = response.getJSONObject("current").getJSONObject("condition").getString("text");
                     String conditionIcon = response.getJSONObject("current").getJSONObject("condition").getString("icon");
                     Picasso.get().load("http:".concat(conditionIcon)).into(iconIV);
                     conditionTV.setText(condition);
-                    if (isDay==1){
+                    if (isDay == 1) {
                         //Morning
                         Picasso.get().load("https://images.unsplash.com/photo-1566228015668-4c45dbc4e2f5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1887&q=80").into(backIV);
-                    }else {//night
+                    } else {//night
                         Picasso.get().load("https://images.unsplash.com/photo-1509515837298-2c67a3933321?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=388&q=80").into(backIV);
                     }
 
@@ -169,13 +180,13 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject forecast0 = forecastObj.getJSONArray("forecastday").getJSONObject(0);
                     JSONArray hourArray = forecast0.getJSONArray("hour");
 
-                    for (int i=0; i<hourArray.length(); i++){
+                    for (int i = 0; i < hourArray.length(); i++) {
                         JSONObject hourobj = hourArray.getJSONObject(i);
                         String time = hourobj.getString("time");
                         String temper = hourobj.getString("temp_c");
                         String img = hourobj.getJSONObject("condition").getString("icon");
                         String wind = hourobj.getString("wind_kph");
-                        weatherRVModelArrayList.add(new WeatherRVModel(time, temper,img,wind));
+                        weatherRVModelArrayList.add(new WeatherRVModel(time, temper, img, wind));
                     }
                     weatherRVAdapter.notifyDataSetChanged();
 
@@ -193,6 +204,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-                requestQueue.add(jsonObjectRequest);
+        requestQueue.add(jsonObjectRequest);
     }
 }

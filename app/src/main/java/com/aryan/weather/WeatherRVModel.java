@@ -6,7 +6,6 @@ public class WeatherRVModel {
     private String icon;
     private String windspeed;
 
-
     public String getTime() {
         return time;
     }
@@ -45,5 +44,9 @@ public class WeatherRVModel {
         this.icon = icon;
         this.windspeed = windspeed;
     }
-
 }
+
+
+
+
+
